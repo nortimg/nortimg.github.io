@@ -1,30 +1,20 @@
 function tazeros_api(url, module, controller, method, attributes, callback) {
     var xhr = new XMLHttpRequest;
-    xhr.onreadystatechange = function() {
-        console.log(url, module, controller, attributes, callback)
+    xhr.onreadystatechange = function () {
         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
             try {
                 var response = JSON.parse(xhr.responseText);
-	//	var response = xhr.responseText;
                 if (response.state != undefined && response.state == 200) {
-                    console.log('response.state != undefined && response.state == 200')
                     callback(response.response);
-	//	    console.log(response.state);
                 }
             } catch (objError) {
-                if (objError instanceof SyntaxError) {
-                    console.log(objError.name);
-                } else {
-                    console.log(objError.message);
-                }
+                console.log(objError);
             }
         };
     };
     xhr.open("POST", url, true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    console.log(JSON.stringify(attributes));    
     xhr.send("module=" + module + "&controller=" + controller + "&method=" + method + "&attributes=" + JSON.stringify(attributes));
-    
 }
 
 function tazeros_stats_get_cookie(t) {
@@ -90,146 +80,156 @@ function tazeros_stats_distance(t, e, s, n) {
     return Math.sqrt(Math.pow(a, 2) + Math.pow(o, 2))
 }
 
-function tazeros_stats_init(tazeros_stats_config){
-    if(typeof window !== 'undefined' && typeof window.define === 'function' && window.define.amd && window.Fingerprint2 == undefined){
-        require(['Fingerprint2'], function(Fingerprint2){
+function tazeros_stats_init(tazeros_stats_config) {
+    if (typeof window !== 'undefined' && typeof window.define === 'function' && window.define.amd && window.Fingerprint2 == undefined) {
+        require(['Fingerprint2'], function (Fingerprint2) {
             window.Fingerprint2 = Fingerprint2;
             tazeros_stats_start(tazeros_stats_config);
         });
-    }else{
+    } else {
         tazeros_stats_start(tazeros_stats_config);
     }
 }
 
-function tazeros_stats_start(tazeros_stats_config){
-    new Fingerprint2().get(function(tazeros_stats_fingerprint) {
-        
-        var tazeros_stats_r = tazeros_stats_get_random(0, 1000);
-        if(tazeros_stats_r < 250){
-            var tazeros_stat_server = "http://31.211.66.56:88";
-        }else if(tazeros_stats_r >= 250 && tazeros_stats_r < 500){
-            var tazeros_stat_server = "http://31.211.66.56:88";
-        }else if(tazeros_stats_r >= 500 && tazeros_stats_r < 750){
-            var tazeros_stat_server = "http://31.211.66.56:88";
-        }else{
-            var tazeros_stat_server = "http://31.211.66.56:88";
-        }
+function tazeros_stats_start(tazeros_stats_config) {
+    new Fingerprint2().get(function (tazeros_stats_fingerprint) {
 
-        var tazeros_stats_movements = [];
-        var tazeros_stats_movements_last_points = [0, 0];
+        // var tazeros_stats_r = tazeros_stats_get_random(0, 1000);
+        // if(tazeros_stats_r < 250){
+        //     var tazeros_stat_server = "https://api04.tazeros.com";
+        // }else if(tazeros_stats_r >= 250 && tazeros_stats_r < 500){
+        //     var tazeros_stat_server = "https://api05.tazeros.com";
+        // }else if(tazeros_stats_r >= 500 && tazeros_stats_r < 750){
+        //     var tazeros_stat_server = "https://api06.tazeros.com";
+        // }else{
+        //     var tazeros_stat_server = "https://api07.tazeros.com";
+        // }
+
+        var tazeros_stat_server = "https://api09.tazeros.com";
+
         var tazeros_stats_session_id = tazeros_stats_get_random(1111111111, 9999999999) + "_" + Date.now();
         var tazeros_stats_visitor_id = tazeros_stats_get_cookie("tzr_id") != undefined ? tazeros_stats_get_cookie("tzr_id") : tazeros_stats_get_cookie("fbt_stats_visitor_id");
 
         if (tazeros_stats_visitor_id == undefined) {
-            tazeros_api(tazeros_stat_server, "webstat", "tracker", "visitor", {}, function(visitor_response) {
+            tazeros_api(tazeros_stat_server, "webstat", "tracker", "visitor", {}, function (visitor_response) {
+
                 tazeros_stats_visitor_id = visitor_response.data;
-                tazeros_stats_config.callback(tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
                 tazeros_stats_set_cookie("tzr_id", tazeros_stats_visitor_id, {
                     path: "/",
                     expires: 999999999
                 });
-                if(tazeros_stats_config.recommendations[0] > 0){
-                    tazeros_api(tazeros_stat_server, "webstat", "recommendations", "get", {
-                        site_id: tazeros_stats_config.site_id,
-                        visitor_id: tazeros_stats_visitor_id,
-                        session_id: tazeros_stats_session_id,
-                        fingerprint: tazeros_stats_fingerprint,
-                        recommendations: tazeros_stats_config.recommendations
-                    }, function(recommendations_response) {
-                        if(recommendations_response.state == 200){
-                            tazeros_stats_config.recommendations_callback(recommendations_response.data);
-                        }
-                    });
-                }
-                tazeros_api(tazeros_stat_server, "webstat", "tracker", "page", {
-                    site_id: tazeros_stats_config.site_id,
-                    visitor_id: tazeros_stats_visitor_id,
-                    page: encodeURIComponent(window.location.href),
-                    referer: encodeURIComponent(document.referrer),
-                    session_id: tazeros_stats_session_id,
-                    fingerprint: tazeros_stats_fingerprint
-                }, function(page_response) {
-                    console.log(1)
-                    setInterval(function() {
-                        if (tazeros_stats_movements.length > 0) {
-                            console.log(1)
-                            tazeros_api(tazeros_stat_server, "webstat", "tracker", "movements", {
-                                session_id: tazeros_stats_session_id,
-                                fingerprint: tazeros_stats_fingerprint,
-                                height: Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight),
-                                width: document.body.clientWidth,
-                                movements: []
-                            }, function(movements_response) {
-                                console.log(1.1)
-                                tazeros_stats_movements = [];
-                            });
-                        }
-                    }, 5000);
-                });
+
+                tazeros_stats_start_after(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
+
             });
         } else {
-            tazeros_stats_config.callback(tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
-            if(tazeros_stats_config.recommendations[0] > 0){
-                tazeros_api(tazeros_stat_server, "webstat", "recommendations", "get", {
-                    site_id: tazeros_stats_config.site_id,
-                    visitor_id: tazeros_stats_visitor_id,
-                    session_id: tazeros_stats_session_id,
-                    fingerprint: tazeros_stats_fingerprint,
-                    recommendations: tazeros_stats_config.recommendations
-                }, function(recommendations_response) {
-                    if(recommendations_response.state == 200){
-                        console.log(2)
-                        tazeros_stats_config.recommendations_callback(recommendations_response.data);
-                    }
-                });
+
+            if (tazeros_stats_visitor_id.split("-").length == 1 || tazeros_stats_visitor_id.split("-").length == 5) {
+                tazeros_upgrade_visitor_id(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
+            } else {
+                tazeros_stats_start_after(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
             }
-            tazeros_api(tazeros_stat_server, "webstat", "tracker", "page", {
-                site_id: tazeros_stats_config.site_id,
-                visitor_id: tazeros_stats_visitor_id,
-                page: encodeURIComponent(window.location.href),
-                referer: encodeURIComponent(document.referrer),
-                session_id: tazeros_stats_session_id,
-                fingerprint: tazeros_stats_fingerprint
-            }, function(page_response) {
-                setInterval(function() {
-                    if (tazeros_stats_movements.length > 0) {
-                        console.log(3)
-                        tazeros_api(tazeros_stat_server, "webstat", "tracker", "movements", {
-                            session_id: tazeros_stats_session_id,
-                            fingerprint: tazeros_stats_fingerprint,
-                            height: Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight),
-                            width: document.body.clientWidth,
-                            movements: tazeros_stats_config.movements ? tazeros_stats_movements : []
-                        }, function(movements_response) {
-                            tazeros_stats_movements = [];
-                            console.log(3.1)
-                        });
-                    }
-                }, 5000);
-            });
+
         }
-        window.addEventListener("mousemove", function(t) {
-            if (Math.abs(tazeros_stats_distance(t.pageX, t.pageY, tazeros_stats_movements_last_points[0], tazeros_stats_movements_last_points[1])) > 10) {
-                tazeros_stats_movements.push([Date.now(), t.pageX, t.pageY, tazeros_get_dom_path(document.elementFromPoint(t.pageX - window.pageXOffset, t.pageY - window.pageYOffset))]);
-                tazeros_stats_movements_last_points = [t.pageX, t.pageY];
-            }
-        });
-        window.addEventListener("click", function(t) {
-            if (Math.abs(tazeros_stats_distance(t.pageX, t.pageY, tazeros_stats_movements_last_points[0], tazeros_stats_movements_last_points[1])) > 10) {
-                tazeros_stats_movements.push([Date.now(), t.pageX, t.pageY, tazeros_get_dom_path(document.elementFromPoint(t.pageX - window.pageXOffset, t.pageY - window.pageYOffset))]);
-                tazeros_stats_movements_last_points = [t.pageX, t.pageY];
-            }
-        });
-        window.addEventListener("tap", function(t) {
-            if (Math.abs(tazeros_stats_distance(t.pageX, t.pageY, tazeros_stats_movements_last_points[0], tazeros_stats_movements_last_points[1])) > 10) {
-                tazeros_stats_movements.push([Date.now(), t.pageX, t.pageY, tazeros_get_dom_path(document.elementFromPoint(t.pageX - window.pageXOffset, t.pageY - window.pageYOffset))]);
-                tazeros_stats_movements_last_points = [t.pageX, t.pageY];
-            }
-        });
+
     });
 }
 
-(function(name, context, definition) {
+function tazeros_upgrade_visitor_id(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server) {
+    tazeros_api("https://api04.tazeros.com", "webstat", "tracker", "upgrade_visitor_id", { visitor_id: tazeros_stats_visitor_id }, function (response) {
+        if (response.data) {
+            tazeros_stats_visitor_id = "api04-" + tazeros_stats_visitor_id;
+            tazeros_stats_set_cookie("tzr_id", tazeros_stats_visitor_id, { path: "/", expires: 999999999 });
+            tazeros_stats_start_after(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
+        } else {
+            tazeros_api("https://api05.tazeros.com", "webstat", "tracker", "upgrade_visitor_id", { visitor_id: tazeros_stats_visitor_id }, function (response) {
+                if (response.data) {
+                    tazeros_stats_visitor_id = "api05-" + tazeros_stats_visitor_id;
+                    tazeros_stats_set_cookie("tzr_id", tazeros_stats_visitor_id, { path: "/", expires: 999999999 });
+                    tazeros_stats_start_after(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
+                } else {
+                    tazeros_api("https://api06.tazeros.com", "webstat", "tracker", "upgrade_visitor_id", { visitor_id: tazeros_stats_visitor_id }, function (response) {
+                        if (response.data) {
+                            tazeros_stats_visitor_id = "api06-" + tazeros_stats_visitor_id;
+                            tazeros_stats_set_cookie("tzr_id", tazeros_stats_visitor_id, { path: "/", expires: 999999999 });
+                            tazeros_stats_start_after(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
+                        } else {
+                            tazeros_api("https://api07.tazeros.com", "webstat", "tracker", "upgrade_visitor_id", { visitor_id: tazeros_stats_visitor_id }, function (response) {
+                                if (response.data) {
+                                    tazeros_stats_visitor_id = "api07-" + tazeros_stats_visitor_id;
+                                    tazeros_stats_set_cookie("tzr_id", tazeros_stats_visitor_id, { path: "/", expires: 999999999 });
+                                    tazeros_stats_start_after(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
+}
+
+function tazeros_stats_start_after(tazeros_stats_config, tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server) {
+
+    var tazeros_stats_movements = [];
+    var tazeros_stats_movements_last_points = [0, 0];
+
+    tazeros_stats_config.callback(tazeros_stats_visitor_id, tazeros_stats_fingerprint, tazeros_stats_session_id, tazeros_stat_server);
+
+    if (tazeros_stats_config.recommendations > 0) {
+        tazeros_api("https://" + tazeros_stats_visitor_id.split("-")[0] + ".tazeros.com", "webstat", "recommendations", "get", {
+            site_id: tazeros_stats_config.site_id,
+            visitor_id: tazeros_stats_visitor_id,
+            session_id: tazeros_stats_session_id,
+            fingerprint: tazeros_stats_fingerprint,
+            recommendations: tazeros_stats_config.recommendations
+        }, function (recommendations_response) {
+            if (recommendations_response.state == 200) {
+                tazeros_stats_config.recommendations_callback(recommendations_response.data);
+            } else {
+                tazeros_stats_config.recommendations_callback_error();
+            }
+        });
+    }
+    tazeros_api(tazeros_stat_server, "webstat", "tracker", "page", {
+        site_id: tazeros_stats_config.site_id,
+        visitor_id: tazeros_stats_visitor_id,
+        page: encodeURIComponent(window.location.href),
+        referer: encodeURIComponent(document.referrer),
+        session_id: tazeros_stats_session_id,
+        fingerprint: tazeros_stats_fingerprint
+    }, function (page_response) {
+        setInterval(function () {
+            tazeros_api(tazeros_stat_server, "webstat", "tracker", "movements", {
+                site_id: tazeros_stats_config.site_id,
+                session_id: tazeros_stats_session_id,
+                fingerprint: tazeros_stats_fingerprint,
+                visitor_id: tazeros_stats_visitor_id,
+                page: encodeURIComponent(window.location.href),
+                height: Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight),
+                width: document.body.clientWidth,
+                movements: tazeros_stats_config.movements ? [] : []
+            }, function (movements_response) {
+                tazeros_stats_movements = [];
+            });
+        }, 5000);
+    });
+
+    window.addEventListener("mousemove", function (t) {
+        if (Math.abs(tazeros_stats_distance(t.pageX, t.pageY, tazeros_stats_movements_last_points[0], tazeros_stats_movements_last_points[1])) > 10) {
+            tazeros_stats_movements.push([Date.now(), t.pageX, t.pageY, tazeros_get_dom_path(document.elementFromPoint(t.pageX - window.pageXOffset, t.pageY - window.pageYOffset)), "move"]);
+            tazeros_stats_movements_last_points = [t.pageX, t.pageY];
+        }
+    });
+    window.addEventListener("click", function (t) {
+        tazeros_stats_movements.push([Date.now(), t.pageX, t.pageY, tazeros_get_dom_path(document.elementFromPoint(t.pageX - window.pageXOffset, t.pageY - window.pageYOffset)), "click"]);
+    });
+    window.addEventListener("tap", function (t) {
+        tazeros_stats_movements.push([Date.now(), t.pageX, t.pageY, tazeros_get_dom_path(document.elementFromPoint(t.pageX - window.pageXOffset, t.pageY - window.pageYOffset)), "tap"]);
+    });
+}
+
+(function (name, context, definition) {
     'use strict'
     if (typeof window !== 'undefined' && typeof window.define === 'function' && window.define.amd) {
         window.define(name, definition)
@@ -240,13 +240,13 @@ function tazeros_stats_start(tazeros_stats_config){
     } else {
         context[name] = definition()
     }
-})('Fingerprint2', this, function() {
+})('Fingerprint2', this, function () {
     'use strict'
     /**
      * @constructor
      * @param {Object=} options
      */
-    var Fingerprint2 = function(options) {
+    var Fingerprint2 = function (options) {
         if (!(this instanceof Fingerprint2)) {
             return new Fingerprint2(options)
         }
@@ -274,7 +274,7 @@ function tazeros_stats_start(tazeros_stats_config){
         this.nativeMap = Array.prototype.map
     }
     Fingerprint2.prototype = {
-        extend: function(source, target) {
+        extend: function (source, target) {
             if (source == null) {
                 return target
             }
@@ -285,11 +285,11 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return target
         },
-        get: function(done) {
+        get: function (done) {
             var that = this
             var keys = {
                 data: [],
-                addPreprocessedComponent: function(pair) {
+                addPreprocessedComponent: function (pair) {
                     var componentValue = pair.value
                     if (typeof that.options.preprocessor === 'function') {
                         componentValue = that.options.preprocessor(pair.key, componentValue)
@@ -329,11 +329,11 @@ function tazeros_stats_start(tazeros_stats_config){
             keys = this.hasLiedBrowserKey(keys)
             keys = this.touchSupportKey(keys)
             keys = this.customEntropyFunction(keys)
-            this.fontsKey(keys, function(keysWithFont) {
-                that.audioKey(keysWithFont, function(newKeys) {
-                    that.enumerateDevicesKey(newKeys, function(keysWithDevices) {
+            this.fontsKey(keys, function (keysWithFont) {
+                that.audioKey(keysWithFont, function (newKeys) {
+                    that.enumerateDevicesKey(newKeys, function (keysWithDevices) {
                         var values = []
-                        that.each(keysWithDevices.data, function(pair) {
+                        that.each(keysWithDevices.data, function (pair) {
                             var value = pair.value
                             if (value && typeof value.join === 'function') {
                                 values.push(value.join(';'))
@@ -348,15 +348,15 @@ function tazeros_stats_start(tazeros_stats_config){
             })
         },
         // https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices
-        enumerateDevicesKey: function(keys, done) {
+        enumerateDevicesKey: function (keys, done) {
             if (this.options.excludeEnumerateDevices || !this.isEnumerateDevicesSupported()) {
                 return done(keys)
             }
 
             navigator.mediaDevices.enumerateDevices()
-                .then(function(devices) {
+                .then(function (devices) {
                     var enumerateDevicesFp = []
-                    devices.forEach(function(device) {
+                    devices.forEach(function (device) {
                         enumerateDevicesFp.push('id=' + device.deviceId + ';gid=' + device.groupId + ';' + device.kind + ';' + device.label)
                     })
                     keys.addPreprocessedComponent({
@@ -365,15 +365,15 @@ function tazeros_stats_start(tazeros_stats_config){
                     })
                     return done(keys)
                 })
-                .catch(function(e) {
+                .catch(function (e) {
                     return done(keys)
                 })
         },
-        isEnumerateDevicesSupported: function() {
+        isEnumerateDevicesSupported: function () {
             return (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices)
         },
         // Inspired by and based on https://github.com/cozylife/audio-fingerprint
-        audioKey: function(keys, done) {
+        audioKey: function (keys, done) {
             if (this.options.excludeAudio) {
                 return done(keys)
             }
@@ -407,22 +407,22 @@ function tazeros_stats_start(tazeros_stats_config){
                 ['reduction', -20],
                 ['attack', 0],
                 ['release', 0.25]
-            ], function(item) {
+            ], function (item) {
                 if (compressor[item[0]] !== undefined && typeof compressor[item[0]].setValueAtTime === 'function') {
                     compressor[item[0]].setValueAtTime(item[1], context.currentTime)
                 }
             })
 
-            var oncompleteTimeout = setTimeout(function() {
+            var oncompleteTimeout = setTimeout(function () {
                 console.warn('Audio fingerprint timed out. Please report bug at https://github.com/Valve/fingerprintjs2 with your user agent: "' + navigator.userAgent + '".')
                 return done(keys)
             }, 1000)
 
-            context.oncomplete = function(event) {
+            context.oncomplete = function (event) {
                 clearTimeout(oncompleteTimeout)
                 var fingerprint = event.renderedBuffer.getChannelData(0)
                     .slice(4500, 5000)
-                    .reduce(function(acc, val) {
+                    .reduce(function (acc, val) {
                         return acc + Math.abs(val)
                     }, 0)
                     .toString()
@@ -441,7 +441,7 @@ function tazeros_stats_start(tazeros_stats_config){
             oscillator.start(0)
             context.startRendering()
         },
-        customEntropyFunction: function(keys) {
+        customEntropyFunction: function (keys) {
             if (typeof this.options.customFunction === 'function') {
                 var customKey = typeof this.options.customKey === 'string' ? this.options.customKey : 'custom'
                 keys.addPreprocessedComponent({
@@ -451,7 +451,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        userAgentKey: function(keys) {
+        userAgentKey: function (keys) {
             if (!this.options.excludeUserAgent) {
                 keys.addPreprocessedComponent({
                     key: 'user_agent',
@@ -461,10 +461,10 @@ function tazeros_stats_start(tazeros_stats_config){
             return keys
         },
         // for tests
-        getUserAgent: function() {
+        getUserAgent: function () {
             return navigator.userAgent
         },
-        languageKey: function(keys) {
+        languageKey: function (keys) {
             if (!this.options.excludeLanguage) {
                 // IE 9,10 on Windows 10 does not have the `navigator.language` property any longer
                 keys.addPreprocessedComponent({
@@ -474,7 +474,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        colorDepthKey: function(keys) {
+        colorDepthKey: function (keys) {
             if (!this.options.excludeColorDepth) {
                 keys.addPreprocessedComponent({
                     key: 'color_depth',
@@ -483,7 +483,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        deviceMemoryKey: function(keys) {
+        deviceMemoryKey: function (keys) {
             if (!this.options.excludeDeviceMemory) {
                 keys.addPreprocessedComponent({
                     key: 'device_memory',
@@ -492,10 +492,10 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        getDeviceMemory: function() {
+        getDeviceMemory: function () {
             return navigator.deviceMemory || -1
         },
-        pixelRatioKey: function(keys) {
+        pixelRatioKey: function (keys) {
             if (!this.options.excludePixelRatio) {
                 keys.addPreprocessedComponent({
                     key: 'pixel_ratio',
@@ -504,16 +504,16 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        getPixelRatio: function() {
+        getPixelRatio: function () {
             return window.devicePixelRatio || ''
         },
-        screenResolutionKey: function(keys) {
+        screenResolutionKey: function (keys) {
             if (!this.options.excludeScreenResolution) {
                 return this.getScreenResolution(keys)
             }
             return keys
         },
-        getScreenResolution: function(keys) {
+        getScreenResolution: function (keys) {
             var resolution
             if (this.options.detectScreenOrientation) {
                 resolution = (window.screen.height > window.screen.width) ? [window.screen.height, window.screen.width] : [window.screen.width, window.screen.height]
@@ -526,13 +526,13 @@ function tazeros_stats_start(tazeros_stats_config){
             })
             return keys
         },
-        availableScreenResolutionKey: function(keys) {
+        availableScreenResolutionKey: function (keys) {
             if (!this.options.excludeAvailableScreenResolution) {
                 return this.getAvailableScreenResolution(keys)
             }
             return keys
         },
-        getAvailableScreenResolution: function(keys) {
+        getAvailableScreenResolution: function (keys) {
             var available
             if (window.screen.availWidth && window.screen.availHeight) {
                 if (this.options.detectScreenOrientation) {
@@ -549,7 +549,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        timezoneOffsetKey: function(keys) {
+        timezoneOffsetKey: function (keys) {
             if (!this.options.excludeTimezoneOffset) {
                 keys.addPreprocessedComponent({
                     key: 'timezone_offset',
@@ -558,7 +558,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        timezoneKey: function(keys) {
+        timezoneKey: function (keys) {
             if (!this.options.excludeTimezone) {
                 var value = null
                 if (window.Intl && window.Intl.DateTimeFormat) {
@@ -571,7 +571,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        sessionStorageKey: function(keys) {
+        sessionStorageKey: function (keys) {
             if (!this.options.excludeSessionStorage && this.hasSessionStorage()) {
                 keys.addPreprocessedComponent({
                     key: 'session_storage',
@@ -580,7 +580,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        localStorageKey: function(keys) {
+        localStorageKey: function (keys) {
             if (!this.options.excludeSessionStorage && this.hasLocalStorage()) {
                 keys.addPreprocessedComponent({
                     key: 'local_storage',
@@ -589,7 +589,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        indexedDbKey: function(keys) {
+        indexedDbKey: function (keys) {
             if (!this.options.excludeIndexedDB && this.hasIndexedDB()) {
                 keys.addPreprocessedComponent({
                     key: 'indexed_db',
@@ -598,7 +598,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        addBehaviorKey: function(keys) {
+        addBehaviorKey: function (keys) {
             // body might not be defined at this point or removed programmatically
             if (!this.options.excludeAddBehavior && document.body && document.body.addBehavior) {
                 keys.addPreprocessedComponent({
@@ -608,7 +608,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        openDatabaseKey: function(keys) {
+        openDatabaseKey: function (keys) {
             if (!this.options.excludeOpenDatabase && window.openDatabase) {
                 keys.addPreprocessedComponent({
                     key: 'open_database',
@@ -617,7 +617,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        cpuClassKey: function(keys) {
+        cpuClassKey: function (keys) {
             if (!this.options.excludeCpuClass) {
                 keys.addPreprocessedComponent({
                     key: 'cpu_class',
@@ -626,7 +626,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        platformKey: function(keys) {
+        platformKey: function (keys) {
             if (!this.options.excludePlatform) {
                 keys.addPreprocessedComponent({
                     key: 'navigator_platform',
@@ -635,7 +635,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        doNotTrackKey: function(keys) {
+        doNotTrackKey: function (keys) {
             if (!this.options.excludeDoNotTrack) {
                 keys.addPreprocessedComponent({
                     key: 'do_not_track',
@@ -644,7 +644,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        canvasKey: function(keys) {
+        canvasKey: function (keys) {
             if (!this.options.excludeCanvas && this.isCanvasSupported()) {
                 keys.addPreprocessedComponent({
                     key: 'canvas',
@@ -653,7 +653,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        webglKey: function(keys) {
+        webglKey: function (keys) {
             if (!this.options.excludeWebGL && this.isWebGlSupported()) {
                 keys.addPreprocessedComponent({
                     key: 'webgl',
@@ -662,7 +662,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        webglVendorAndRendererKey: function(keys) {
+        webglVendorAndRendererKey: function (keys) {
             if (!this.options.excludeWebGLVendorAndRenderer && this.isWebGlSupported()) {
                 keys.addPreprocessedComponent({
                     key: 'webgl_vendor',
@@ -671,7 +671,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        adBlockKey: function(keys) {
+        adBlockKey: function (keys) {
             if (!this.options.excludeAdBlock) {
                 keys.addPreprocessedComponent({
                     key: 'adblock',
@@ -680,7 +680,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        hasLiedLanguagesKey: function(keys) {
+        hasLiedLanguagesKey: function (keys) {
             if (!this.options.excludeHasLiedLanguages) {
                 keys.addPreprocessedComponent({
                     key: 'has_lied_languages',
@@ -689,7 +689,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        hasLiedResolutionKey: function(keys) {
+        hasLiedResolutionKey: function (keys) {
             if (!this.options.excludeHasLiedResolution) {
                 keys.addPreprocessedComponent({
                     key: 'has_lied_resolution',
@@ -698,7 +698,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        hasLiedOsKey: function(keys) {
+        hasLiedOsKey: function (keys) {
             if (!this.options.excludeHasLiedOs) {
                 keys.addPreprocessedComponent({
                     key: 'has_lied_os',
@@ -707,7 +707,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        hasLiedBrowserKey: function(keys) {
+        hasLiedBrowserKey: function (keys) {
             if (!this.options.excludeHasLiedBrowser) {
                 keys.addPreprocessedComponent({
                     key: 'has_lied_browser',
@@ -716,14 +716,14 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        fontsKey: function(keys, done) {
+        fontsKey: function (keys, done) {
             if (this.options.excludeJsFonts) {
                 return this.flashFontsKey(keys, done)
             }
             return this.jsFontsKey(keys, done)
         },
         // flash fonts (will increase fingerprinting time 20X to ~ 130-150ms)
-        flashFontsKey: function(keys, done) {
+        flashFontsKey: function (keys, done) {
             if (this.options.excludeFlashFonts) {
                 return done(keys)
             }
@@ -737,7 +737,7 @@ function tazeros_stats_start(tazeros_stats_config){
             if (typeof this.options.swfPath === 'undefined') {
                 return done(keys)
             }
-            this.loadSwfAndDetectFonts(function(fonts) {
+            this.loadSwfAndDetectFonts(function (fonts) {
                 keys.addPreprocessedComponent({
                     key: 'swf_fonts',
                     value: fonts.join(';')
@@ -746,10 +746,10 @@ function tazeros_stats_start(tazeros_stats_config){
             })
         },
         // kudos to http://www.lalit.org/lab/javascript-css-font-detect/
-        jsFontsKey: function(keys, done) {
+        jsFontsKey: function (keys, done) {
             var that = this
             // doing js fonts detection in a pseudo-async fashion
-            return setTimeout(function() {
+            return setTimeout(function () {
                 // a font will be compared against all the three default fonts.
                 // and if it doesn't match all 3 then that font is not available.
                 var baseFonts = ['monospace', 'sans-serif', 'serif']
@@ -809,7 +809,7 @@ function tazeros_stats_start(tazeros_stats_config){
                 fontList = fontList.concat(that.options.userDefinedFonts)
 
                 // remove duplicate fonts
-                fontList = fontList.filter(function(font, position) {
+                fontList = fontList.filter(function (font, position) {
                     return fontList.indexOf(font) === position
                 })
 
@@ -832,7 +832,7 @@ function tazeros_stats_start(tazeros_stats_config){
                 var defaultHeight = {}
 
                 // creates a span where the fonts will be loaded
-                var createSpan = function() {
+                var createSpan = function () {
                     var s = document.createElement('span')
                     /*
                      * We need this css as in some weird browser this
@@ -862,14 +862,14 @@ function tazeros_stats_start(tazeros_stats_config){
                 }
 
                 // creates a span and load the font to detect and a base font for fallback
-                var createSpanWithFonts = function(fontToDetect, baseFont) {
+                var createSpanWithFonts = function (fontToDetect, baseFont) {
                     var s = createSpan()
                     s.style.fontFamily = "'" + fontToDetect + "'," + baseFont
                     return s
                 }
 
                 // creates spans for the base fonts and adds them to baseFontsDiv
-                var initializeBaseFontsSpans = function() {
+                var initializeBaseFontsSpans = function () {
                     var spans = []
                     for (var index = 0, length = baseFonts.length; index < length; index++) {
                         var s = createSpan()
@@ -881,7 +881,7 @@ function tazeros_stats_start(tazeros_stats_config){
                 }
 
                 // creates spans for the fonts to detect and adds them to fontsDiv
-                var initializeFontsSpans = function() {
+                var initializeFontsSpans = function () {
                     var spans = {}
                     for (var i = 0, l = fontList.length; i < l; i++) {
                         var fontSpans = []
@@ -896,7 +896,7 @@ function tazeros_stats_start(tazeros_stats_config){
                 }
 
                 // checks if a font is available
-                var isFontAvailable = function(fontSpans) {
+                var isFontAvailable = function (fontSpans) {
                     var detected = false
                     for (var i = 0; i < baseFonts.length; i++) {
                         detected = (fontSpans[i].offsetWidth !== defaultWidth[baseFonts[i]] || fontSpans[i].offsetHeight !== defaultHeight[baseFonts[i]])
@@ -944,7 +944,7 @@ function tazeros_stats_start(tazeros_stats_config){
                 done(keys)
             }, 1)
         },
-        pluginsKey: function(keys) {
+        pluginsKey: function (keys) {
             if (!this.options.excludePlugins) {
                 if (this.isIE()) {
                     if (!this.options.excludeIEPlugins) {
@@ -962,7 +962,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        getRegularPlugins: function() {
+        getRegularPlugins: function () {
             var plugins = []
             if (navigator.plugins) {
                 // plugins isn't defined in Node envs.
@@ -975,7 +975,7 @@ function tazeros_stats_start(tazeros_stats_config){
             // sorting plugins only for those user agents, that we know randomize the plugins
             // every time we try to enumerate them
             if (this.pluginsShouldBeSorted()) {
-                plugins = plugins.sort(function(a, b) {
+                plugins = plugins.sort(function (a, b) {
                     if (a.name > b.name) {
                         return 1
                     }
@@ -985,14 +985,14 @@ function tazeros_stats_start(tazeros_stats_config){
                     return 0
                 })
             }
-            return this.map(plugins, function(p) {
-                var mimeTypes = this.map(p, function(mt) {
+            return this.map(plugins, function (p) {
+                var mimeTypes = this.map(p, function (mt) {
                     return [mt.type, mt.suffixes].join('~')
                 }).join(',')
                 return [p.name, p.description, mimeTypes].join('::')
             }, this)
         },
-        getIEPlugins: function() {
+        getIEPlugins: function () {
             var result = []
             if ((Object.getOwnPropertyDescriptor && Object.getOwnPropertyDescriptor(window, 'ActiveXObject')) || ('ActiveXObject' in window)) {
                 var names = [
@@ -1020,7 +1020,7 @@ function tazeros_stats_start(tazeros_stats_config){
                     'rmocx.RealPlayer G2 Control.1'
                 ]
                 // starting to detect plugins in IE
-                result = this.map(names, function(name) {
+                result = this.map(names, function (name) {
                     try {
                         // eslint-disable-next-line no-new
                         new window.ActiveXObject(name)
@@ -1035,7 +1035,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return result
         },
-        pluginsShouldBeSorted: function() {
+        pluginsShouldBeSorted: function () {
             var should = false
             for (var i = 0, l = this.options.sortPluginsFor.length; i < l; i++) {
                 var re = this.options.sortPluginsFor[i]
@@ -1046,7 +1046,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return should
         },
-        touchSupportKey: function(keys) {
+        touchSupportKey: function (keys) {
             if (!this.options.excludeTouchSupport) {
                 keys.addPreprocessedComponent({
                     key: 'touch_support',
@@ -1055,7 +1055,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        hardwareConcurrencyKey: function(keys) {
+        hardwareConcurrencyKey: function (keys) {
             if (!this.options.excludeHardwareConcurrency) {
                 keys.addPreprocessedComponent({
                     key: 'hardware_concurrency',
@@ -1064,7 +1064,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return keys
         },
-        hasSessionStorage: function() {
+        hasSessionStorage: function () {
             try {
                 return !!window.sessionStorage
             } catch (e) {
@@ -1072,41 +1072,41 @@ function tazeros_stats_start(tazeros_stats_config){
             }
         },
         // https://bugzilla.mozilla.org/show_bug.cgi?id=781447
-        hasLocalStorage: function() {
+        hasLocalStorage: function () {
             try {
                 return !!window.localStorage
             } catch (e) {
                 return true // SecurityError when referencing it means it exists
             }
         },
-        hasIndexedDB: function() {
+        hasIndexedDB: function () {
             try {
                 return !!window.indexedDB
             } catch (e) {
                 return true // SecurityError when referencing it means it exists
             }
         },
-        getHardwareConcurrency: function() {
+        getHardwareConcurrency: function () {
             if (navigator.hardwareConcurrency) {
                 return navigator.hardwareConcurrency
             }
             return 'unknown'
         },
-        getNavigatorCpuClass: function() {
+        getNavigatorCpuClass: function () {
             if (navigator.cpuClass) {
                 return navigator.cpuClass
             } else {
                 return 'unknown'
             }
         },
-        getNavigatorPlatform: function() {
+        getNavigatorPlatform: function () {
             if (navigator.platform) {
                 return navigator.platform
             } else {
                 return 'unknown'
             }
         },
-        getDoNotTrack: function() {
+        getDoNotTrack: function () {
             if (navigator.doNotTrack) {
                 return navigator.doNotTrack
             } else if (navigator.msDoNotTrack) {
@@ -1125,7 +1125,7 @@ function tazeros_stats_start(tazeros_stats_config){
         // method returns an array of 3 values:
         // maxTouchPoints, the success or failure of creating a TouchEvent,
         // and the availability of the 'ontouchstart' property
-        getTouchSupport: function() {
+        getTouchSupport: function () {
             var maxTouchPoints = 0
             var touchEvent = false
             if (typeof navigator.maxTouchPoints !== 'undefined') {
@@ -1137,12 +1137,13 @@ function tazeros_stats_start(tazeros_stats_config){
                 document.createEvent('TouchEvent')
                 touchEvent = true
             } catch (_) {
-                /* squelch */ }
+                /* squelch */
+}
             var touchStart = 'ontouchstart' in window
             return [maxTouchPoints, touchEvent, touchStart]
         },
         // https://www.browserleaks.com/canvas#how-does-it-work
-        getCanvasFp: function() {
+        getCanvasFp: function () {
             var result = []
             // Very simple now, need to make it more complex (geo shapes etc)
             var canvas = document.createElement('canvas')
@@ -1205,16 +1206,16 @@ function tazeros_stats_start(tazeros_stats_config){
             return result.join('~')
         },
 
-        getWebglFp: function() {
+        getWebglFp: function () {
             var gl
-            var fa2s = function(fa) {
+            var fa2s = function (fa) {
                 gl.clearColor(0.0, 0.0, 0.0, 1.0)
                 gl.enable(gl.DEPTH_TEST)
                 gl.depthFunc(gl.LEQUAL)
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
                 return '[' + fa[0] + ', ' + fa[1] + ']'
             }
-            var maxAnisotropy = function(gl) {
+            var maxAnisotropy = function (gl) {
                 var ext = gl.getExtension('EXT_texture_filter_anisotropic') || gl.getExtension('WEBKIT_EXT_texture_filter_anisotropic') || gl.getExtension('MOZ_EXT_texture_filter_anisotropic')
                 if (ext) {
                     var anisotropy = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT)
@@ -1300,7 +1301,8 @@ function tazeros_stats_start(tazeros_stats_config){
                     result.push('webgl unmasked renderer:' + gl.getParameter(extensionDebugRendererInfo.UNMASKED_RENDERER_WEBGL))
                 }
             } catch (e) {
-                /* squelch */ }
+                /* squelch */
+}
 
             if (!gl.getShaderPrecisionFormat) {
                 return result.join('~')
@@ -1308,10 +1310,10 @@ function tazeros_stats_start(tazeros_stats_config){
 
             var that = this
 
-            that.each(['FLOAT', 'INT'], function(numType) {
-                that.each(['VERTEX', 'FRAGMENT'], function(shader) {
-                    that.each(['HIGH', 'MEDIUM', 'LOW'], function(numSize) {
-                        that.each(['precision', 'rangeMin', 'rangeMax'], function(key) {
+            that.each(['FLOAT', 'INT'], function (numType) {
+                that.each(['VERTEX', 'FRAGMENT'], function (shader) {
+                    that.each(['HIGH', 'MEDIUM', 'LOW'], function (numSize) {
+                        that.each(['precision', 'rangeMin', 'rangeMax'], function (key) {
                             var format = gl.getShaderPrecisionFormat(gl[shader + '_SHADER'], gl[numSize + '_' + numType])[key]
                             if (key !== 'precision') {
                                 key = 'precision ' + key
@@ -1324,7 +1326,7 @@ function tazeros_stats_start(tazeros_stats_config){
             })
             return result.join('~')
         },
-        getWebglVendorAndRenderer: function() {
+        getWebglVendorAndRenderer: function () {
             /* This a subset of the WebGL fingerprint with a lot of entropy, while being reasonably browser-independent */
             try {
                 var glContext = this.getWebglCanvas()
@@ -1334,7 +1336,7 @@ function tazeros_stats_start(tazeros_stats_config){
                 return null
             }
         },
-        getAdBlock: function() {
+        getAdBlock: function () {
             var ads = document.createElement('div')
             ads.innerHTML = '&nbsp;'
             ads.className = 'adsbox'
@@ -1349,7 +1351,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return result
         },
-        getHasLiedLanguages: function() {
+        getHasLiedLanguages: function () {
             // We check if navigator.language is equal to the first language of navigator.languages
             if (typeof navigator.languages !== 'undefined') {
                 try {
@@ -1363,7 +1365,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return false
         },
-        getHasLiedResolution: function() {
+        getHasLiedResolution: function () {
             if (window.screen.width < window.screen.availWidth) {
                 return true
             }
@@ -1372,7 +1374,7 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return false
         },
-        getHasLiedOs: function() {
+        getHasLiedOs: function () {
             var userAgent = navigator.userAgent.toLowerCase()
             var oscpu = navigator.oscpu
             var platform = navigator.platform.toLowerCase()
@@ -1439,7 +1441,7 @@ function tazeros_stats_start(tazeros_stats_config){
 
             return false
         },
-        getHasLiedBrowser: function() {
+        getHasLiedBrowser: function () {
             var userAgent = navigator.userAgent.toLowerCase()
             var productSub = navigator.productSub
 
@@ -1491,11 +1493,11 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return false
         },
-        isCanvasSupported: function() {
+        isCanvasSupported: function () {
             var elem = document.createElement('canvas')
             return !!(elem.getContext && elem.getContext('2d'))
         },
-        isWebGlSupported: function() {
+        isWebGlSupported: function () {
             // code taken from Modernizr
             if (!this.isCanvasSupported()) {
                 return false
@@ -1504,7 +1506,7 @@ function tazeros_stats_start(tazeros_stats_config){
             var glContext = this.getWebglCanvas()
             return !!window.WebGLRenderingContext && !!glContext
         },
-        isIE: function() {
+        isIE: function () {
             if (navigator.appName === 'Microsoft Internet Explorer') {
                 return true
             } else if (navigator.appName === 'Netscape' && /Trident/.test(navigator.userAgent)) { // IE 11
@@ -1512,20 +1514,20 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             return false
         },
-        hasSwfObjectLoaded: function() {
+        hasSwfObjectLoaded: function () {
             return typeof window.swfobject !== 'undefined'
         },
-        hasMinFlashInstalled: function() {
+        hasMinFlashInstalled: function () {
             return window.swfobject.hasFlashPlayerVersion('9.0.0')
         },
-        addFlashDivNode: function() {
+        addFlashDivNode: function () {
             var node = document.createElement('div')
             node.setAttribute('id', this.options.swfContainerId)
             document.body.appendChild(node)
         },
-        loadSwfAndDetectFonts: function(done) {
+        loadSwfAndDetectFonts: function (done) {
             var hiddenCallback = '___fp_swf_loaded'
-            window[hiddenCallback] = function(fonts) {
+            window[hiddenCallback] = function (fonts) {
                 done(fonts)
             }
             var id = this.options.swfContainerId
@@ -1539,13 +1541,14 @@ function tazeros_stats_start(tazeros_stats_config){
             }
             window.swfobject.embedSWF(this.options.swfPath, id, '1', '1', '9.0.0', false, flashvars, flashparams, {})
         },
-        getWebglCanvas: function() {
+        getWebglCanvas: function () {
             var canvas = document.createElement('canvas')
             var gl = null
             try {
                 gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
             } catch (e) {
-                /* squelch */ }
+                /* squelch */
+}
             if (!gl) {
                 gl = null
             }
@@ -1556,7 +1559,7 @@ function tazeros_stats_start(tazeros_stats_config){
          * @template T
          * @param {T=} context
          */
-        each: function(obj, iterator, context) {
+        each: function (obj, iterator, context) {
             if (obj === null) {
                 return
             }
@@ -1585,7 +1588,7 @@ function tazeros_stats_start(tazeros_stats_config){
          * @param {function(this:T, ?, (string|number), T=):V} iterator
          * @return {V}
          */
-        map: function(obj, iterator, context) {
+        map: function (obj, iterator, context) {
             var results = []
             // Not using strict equality so that this acts as a
             // shortcut to checking for `null` and `undefined`.
@@ -1595,7 +1598,7 @@ function tazeros_stats_start(tazeros_stats_config){
             if (this.nativeMap && obj.map === this.nativeMap) {
                 return obj.map(iterator, context)
             }
-            this.each(obj, function(value, index, list) {
+            this.each(obj, function (value, index, list) {
                 results[results.length] = iterator.call(context, value, index, list)
             })
             return results
@@ -1607,7 +1610,7 @@ function tazeros_stats_start(tazeros_stats_config){
         // Given two 64bit ints (as an array of two 32bit ints) returns the two
         // added together as a 64bit int (as an array of two 32bit ints).
         //
-        x64Add: function(m, n) {
+        x64Add: function (m, n) {
             m = [m[0] >>> 16, m[0] & 0xffff, m[1] >>> 16, m[1] & 0xffff]
             n = [n[0] >>> 16, n[0] & 0xffff, n[1] >>> 16, n[1] & 0xffff]
             var o = [0, 0, 0, 0]
@@ -1629,7 +1632,7 @@ function tazeros_stats_start(tazeros_stats_config){
         // Given two 64bit ints (as an array of two 32bit ints) returns the two
         // multiplied together as a 64bit int (as an array of two 32bit ints).
         //
-        x64Multiply: function(m, n) {
+        x64Multiply: function (m, n) {
             m = [m[0] >>> 16, m[0] & 0xffff, m[1] >>> 16, m[1] & 0xffff]
             n = [n[0] >>> 16, n[0] & 0xffff, n[1] >>> 16, n[1] & 0xffff]
             var o = [0, 0, 0, 0]
@@ -1660,7 +1663,7 @@ function tazeros_stats_start(tazeros_stats_config){
         // representing a number of bit positions, returns the 64bit int (as an
         // array of two 32bit ints) rotated left by that number of positions.
         //
-        x64Rotl: function(m, n) {
+        x64Rotl: function (m, n) {
             n %= 64
             if (n === 32) {
                 return [m[1], m[0]]
@@ -1676,7 +1679,7 @@ function tazeros_stats_start(tazeros_stats_config){
         // representing a number of bit positions, returns the 64bit int (as an
         // array of two 32bit ints) shifted left by that number of positions.
         //
-        x64LeftShift: function(m, n) {
+        x64LeftShift: function (m, n) {
             n %= 64
             if (n === 0) {
                 return m
@@ -1690,7 +1693,7 @@ function tazeros_stats_start(tazeros_stats_config){
         // Given two 64bit ints (as an array of two 32bit ints) returns the two
         // xored together as a 64bit int (as an array of two 32bit ints).
         //
-        x64Xor: function(m, n) {
+        x64Xor: function (m, n) {
             return [m[0] ^ n[0], m[1] ^ n[1]]
         },
         //
@@ -1698,7 +1701,7 @@ function tazeros_stats_start(tazeros_stats_config){
         // (`[0, h[0] >>> 1]` is a 33 bit unsigned right shift. This is the
         // only place where we need to right shift 64bit ints.)
         //
-        x64Fmix: function(h) {
+        x64Fmix: function (h) {
             h = this.x64Xor(h, [0, h[0] >>> 1])
             h = this.x64Multiply(h, [0xff51afd7, 0xed558ccd])
             h = this.x64Xor(h, [0, h[0] >>> 1])
@@ -1711,7 +1714,7 @@ function tazeros_stats_start(tazeros_stats_config){
         // Given a string and an optional seed as an int, returns a 128 bit
         // hash using the x64 flavor of MurmurHash3, as an unsigned hex.
         //
-        x64hash128: function(key, seed) {
+        x64hash128: function (key, seed) {
             key = key || ''
             seed = seed || 0
             var remainder = key.length % 16
@@ -1745,57 +1748,57 @@ function tazeros_stats_start(tazeros_stats_config){
             switch (remainder) {
                 case 15:
                     k2 = this.x64Xor(k2, this.x64LeftShift([0, key.charCodeAt(i + 14)], 48))
-                    // fallthrough
+                // fallthrough
                 case 14:
                     k2 = this.x64Xor(k2, this.x64LeftShift([0, key.charCodeAt(i + 13)], 40))
-                    // fallthrough
+                // fallthrough
                 case 13:
                     k2 = this.x64Xor(k2, this.x64LeftShift([0, key.charCodeAt(i + 12)], 32))
-                    // fallthrough
+                // fallthrough
                 case 12:
                     k2 = this.x64Xor(k2, this.x64LeftShift([0, key.charCodeAt(i + 11)], 24))
-                    // fallthrough
+                // fallthrough
                 case 11:
                     k2 = this.x64Xor(k2, this.x64LeftShift([0, key.charCodeAt(i + 10)], 16))
-                    // fallthrough
+                // fallthrough
                 case 10:
                     k2 = this.x64Xor(k2, this.x64LeftShift([0, key.charCodeAt(i + 9)], 8))
-                    // fallthrough
+                // fallthrough
                 case 9:
                     k2 = this.x64Xor(k2, [0, key.charCodeAt(i + 8)])
                     k2 = this.x64Multiply(k2, c2)
                     k2 = this.x64Rotl(k2, 33)
                     k2 = this.x64Multiply(k2, c1)
                     h2 = this.x64Xor(h2, k2)
-                    // fallthrough
+                // fallthrough
                 case 8:
                     k1 = this.x64Xor(k1, this.x64LeftShift([0, key.charCodeAt(i + 7)], 56))
-                    // fallthrough
+                // fallthrough
                 case 7:
                     k1 = this.x64Xor(k1, this.x64LeftShift([0, key.charCodeAt(i + 6)], 48))
-                    // fallthrough
+                // fallthrough
                 case 6:
                     k1 = this.x64Xor(k1, this.x64LeftShift([0, key.charCodeAt(i + 5)], 40))
-                    // fallthrough
+                // fallthrough
                 case 5:
                     k1 = this.x64Xor(k1, this.x64LeftShift([0, key.charCodeAt(i + 4)], 32))
-                    // fallthrough
+                // fallthrough
                 case 4:
                     k1 = this.x64Xor(k1, this.x64LeftShift([0, key.charCodeAt(i + 3)], 24))
-                    // fallthrough
+                // fallthrough
                 case 3:
                     k1 = this.x64Xor(k1, this.x64LeftShift([0, key.charCodeAt(i + 2)], 16))
-                    // fallthrough
+                // fallthrough
                 case 2:
                     k1 = this.x64Xor(k1, this.x64LeftShift([0, key.charCodeAt(i + 1)], 8))
-                    // fallthrough
+                // fallthrough
                 case 1:
                     k1 = this.x64Xor(k1, [0, key.charCodeAt(i)])
                     k1 = this.x64Multiply(k1, c1)
                     k1 = this.x64Rotl(k1, 31)
                     k1 = this.x64Multiply(k1, c2)
                     h1 = this.x64Xor(h1, k1)
-                    // fallthrough
+                // fallthrough
             }
             h1 = this.x64Xor(h1, [0, key.length])
             h2 = this.x64Xor(h2, [0, key.length])
@@ -1812,40 +1815,43 @@ function tazeros_stats_start(tazeros_stats_config){
     return Fingerprint2
 });
 
-if(tazeros_stats_config == undefined) var tazeros_stats_config = {};
-if(tazeros_stats_config.site_id == undefined) tazeros_stats_config.site_id = 0;
-if(tazeros_stats_config.movements == undefined) tazeros_stats_config.movements = false;
-if(tazeros_stats_config.permission == undefined) tazeros_stats_config.permission = "yes";
-if(tazeros_stats_config.permission_popup_style == undefined) tazeros_stats_config.permission_popup_style = 'position: absolute;z-index: 99999999;right: 0;background-color: #fff;bottom: 0;font-size: 12px;line-height: 1.5;padding: 6px 7px 2px;color: #000;text-align: center;box-shadow: 0 0 9px 0px rgba(0,0,0,.22);';
-if(tazeros_stats_config.permission_popup_text == undefined) tazeros_stats_config.permission_popup_text = {en:'This site uses cookies and other technologies to help you navigate, as well as provide better user experience, analyze the use of our products and services, and improve the quality of advertising and marketing activities', ru:'Этот сайт использует куки-файлы и другие технологии, чтобы помочь вам в навигации, а также предоставить лучший пользовательский опыт, анализировать использование наших продуктов и услуг, повысить качество рекламных и маркетинговых активностей'};
-if(tazeros_stats_config.permission_accept_text == undefined) tazeros_stats_config.permission_accept_text = {en:'Accept', ru:'Принять'};
-if(tazeros_stats_config.permission_accept_style == undefined) tazeros_stats_config.permission_accept_style = 'display: inline-block;text-align: center;user-select: none;border: none;outline: none;padding: 10px 13px 9px 13px;font-size: 12px;line-height: 1;background-color:transparent;color: #000;border-radius: 3px;cursor: pointer;text-transform: uppercase;border: 1px solid #000;margin-right: 5px;margin-bottom: 5px;margin-top:5px;';
-if(tazeros_stats_config.permission_decline_text == undefined) tazeros_stats_config.permission_decline_text = {en:'Decline', ru:'Отказаться'};
-if(tazeros_stats_config.permission_decline_style == undefined) tazeros_stats_config.permission_decline_style = 'display: inline-block;text-align: center;user-select: none;border: none;outline: none;padding: 10px 13px 9px 13px;font-size: 12px;line-height: 1;background-color: transparent;color: #000;border-radius: 3px;cursor: pointer;text-transform: uppercase;border: 1px solid #000;margin-bottom: 5px;margin-top:5px;';
-if(tazeros_stats_config.recommendations == undefined) tazeros_stats_config.recommendations = [0, 0];
-if(tazeros_stats_config.callback == undefined) tazeros_stats_config.callback = function(){};
-if(tazeros_stats_config.recommendations_callback == undefined) tazeros_stats_config.recommendations_callback = function(){};
+if (tazeros_stats_config == undefined) var tazeros_stats_config = {};
+if (tazeros_stats_config.site_id == undefined) tazeros_stats_config.site_id = 0;
+if (tazeros_stats_config.movements == undefined) tazeros_stats_config.movements = true;
+if (tazeros_stats_config.permission == undefined) tazeros_stats_config.permission = "yes";
+if (tazeros_stats_config.permission_popup_style == undefined) tazeros_stats_config.permission_popup_style = 'position: absolute;z-index: 99999999;right: 0;background-color: #fff;bottom: 0;font-size: 12px;line-height: 1.2;padding: 6px 7px 2px;color: #000;text-align: center;box-shadow: 0 0 9px 0px rgba(0,0,0,.22);';
+if (tazeros_stats_config.permission_popup_text == undefined) tazeros_stats_config.permission_popup_text = { en: 'This site uses cookies and other technologies to help you navigate, as well as provide better user experience, analyze the use of our products and services, and improve the quality of advertising and marketing activities', ru: 'Ð­Ñ‚Ð¾Ñ‚ ÑÐ°Ð¹Ñ‚ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ ÐºÑƒÐºÐ¸-Ñ„Ð°Ð¹Ð»Ñ‹ Ð¸ Ð´Ñ€ÑƒÐ³Ð¸Ðµ Ñ‚ÐµÑ…Ð½Ð¾Ð»Ð¾Ð³Ð¸Ð¸, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð¿Ð¾Ð¼Ð¾Ñ‡ÑŒ Ð²Ð°Ð¼ Ð² Ð½Ð°Ð²Ð¸Ð³Ð°Ñ†Ð¸Ð¸, Ð° Ñ‚Ð°ÐºÐ¶Ðµ Ð¿Ñ€ÐµÐ´Ð¾ÑÑ‚Ð°Ð²Ð¸Ñ‚ÑŒ Ð»ÑƒÑ‡ÑˆÐ¸Ð¹ Ð¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ñ‚ÐµÐ»ÑŒÑÐºÐ¸Ð¹ Ð¾Ð¿Ñ‹Ñ‚, Ð°Ð½Ð°Ð»Ð¸Ð·Ð¸Ñ€Ð¾Ð²Ð°Ñ‚ÑŒ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð¸Ðµ Ð½Ð°ÑˆÐ¸Ñ… Ð¿Ñ€Ð¾Ð´ÑƒÐºÑ‚Ð¾Ð² Ð¸ ÑƒÑÐ»ÑƒÐ³, Ð¿Ð¾Ð²Ñ‹ÑÐ¸Ñ‚ÑŒ ÐºÐ°Ñ‡ÐµÑÑ‚Ð²Ð¾ Ñ€ÐµÐºÐ»Ð°Ð¼Ð½Ñ‹Ñ… Ð¸ Ð¼Ð°Ñ€ÐºÐµÑ‚Ð¸Ð½Ð³Ð¾Ð²Ñ‹Ñ… Ð°ÐºÑ‚Ð¸Ð²Ð½Ð¾ÑÑ‚ÐµÐ¹' };
+if (tazeros_stats_config.permission_accept_text == undefined) tazeros_stats_config.permission_accept_text = { en: 'Accept', ru: 'ÐŸÑ€Ð¸Ð½ÑÑ‚ÑŒ' };
+if (tazeros_stats_config.permission_accept_style == undefined) tazeros_stats_config.permission_accept_style = 'background-image:none;display: inline-block;text-align: center;user-select: none;border: none;outline: none;padding: 10px 13px 9px 13px;font-size: 12px;line-height: 1;background-color:transparent;color: #000;border-radius: 3px;cursor: pointer;text-transform: uppercase;border: 1px solid #000;margin-right: 5px;margin-bottom: 5px;margin-top:5px;';
+if (tazeros_stats_config.permission_decline_text == undefined) tazeros_stats_config.permission_decline_text = { en: 'Decline', ru: 'ÐžÑ‚ÐºÐ°Ð·Ð°Ñ‚ÑŒÑÑ' };
+if (tazeros_stats_config.permission_decline_style == undefined) tazeros_stats_config.permission_decline_style = 'background-image:none;display: inline-block;text-align: center;user-select: none;border: none;outline: none;padding: 10px 13px 9px 13px;font-size: 12px;line-height: 1;background-color: transparent;color: #000;border-radius: 3px;cursor: pointer;text-transform: uppercase;border: 1px solid #000;margin-bottom: 5px;margin-top:5px;';
+if (tazeros_stats_config.recommendations == undefined) tazeros_stats_config.recommendations = 0;
+if (tazeros_stats_config.callback == undefined) tazeros_stats_config.callback = function () { };
+if (tazeros_stats_config.callback_error == undefined) tazeros_stats_config.callback_error = function () { };
+if (tazeros_stats_config.recommendations_callback == undefined) tazeros_stats_config.recommendations_callback = function () { };
+if (tazeros_stats_config.recommendations_callback_error == undefined) tazeros_stats_config.recommendations_callback_error = function () { };
 
 var tazeros_stats_permission = tazeros_stats_get_cookie("tzr_permission");
 var tazeros_stats_language = (navigator.language || navigator.userLanguage).split('-');
 tazeros_stats_language = tazeros_stats_language[0] != undefined ? tazeros_stats_language[0] : 'en';
 
-if(tazeros_stats_permission == undefined && tazeros_stats_config.permission == "yes"){
-    tazeros_stats_set_cookie("tzr_permission", "yes", {path: "/",expires: 999999999});
+if (tazeros_stats_permission == undefined && tazeros_stats_config.permission == "yes") {
+    tazeros_stats_set_cookie("tzr_permission", "yes", { path: "/", expires: 999999999 });
     tazeros_stats_init(tazeros_stats_config);
-}else if(tazeros_stats_permission == undefined && tazeros_stats_config.permission == "no"){
-    tazeros_stats_set_cookie("tzr_permission", "no", {path: "/",expires: 999999999});
-}else if(tazeros_stats_permission == undefined && tazeros_stats_config.permission == "ask"){
+} else if (tazeros_stats_permission == undefined && tazeros_stats_config.permission == "no") {
+    tazeros_stats_set_cookie("tzr_permission", "no", { path: "/", expires: 999999999 });
+    tazeros_stats_config.callback_error();
+} else if (tazeros_stats_permission == undefined && tazeros_stats_config.permission == "ask") {
     var tazeros_stats_permission_popup = document.createElement('div');
     tazeros_stats_permission_popup.style = tazeros_stats_config.permission_popup_style;
-    tazeros_stats_permission_popup.innerHTML = tazeros_stats_config.permission_popup_text[tazeros_stats_language] != undefined ? tazeros_stats_config.permission_popup_text[tazeros_stats_language]+'<br>' : 'This site uses cookies and other technologies to help you navigate, as well as provide better user experience, analyze the use of our products and services, and improve the quality of advertising and marketing activities<br>';
+    tazeros_stats_permission_popup.innerHTML = tazeros_stats_config.permission_popup_text[tazeros_stats_language] != undefined ? tazeros_stats_config.permission_popup_text[tazeros_stats_language] + '<br>' : 'This site uses cookies and other technologies to help you navigate, as well as provide better user experience, analyze the use of our products and services, and improve the quality of advertising and marketing activities<br>';
 
     var tazeros_stats_permission_popup_accept = document.createElement('button');
     tazeros_stats_permission_popup_accept.innerHTML = tazeros_stats_config.permission_accept_text[tazeros_stats_language] != undefined ? tazeros_stats_config.permission_accept_text[tazeros_stats_language] : 'Accept';
     tazeros_stats_permission_popup_accept.style = tazeros_stats_config.permission_accept_style;
-    tazeros_stats_permission_popup_accept.onclick = function(){
+    tazeros_stats_permission_popup_accept.onclick = function () {
         document.body.removeChild(tazeros_stats_permission_popup);
-        tazeros_stats_set_cookie("tzr_permission", "yes", {path: "/",expires: 999999999});
+        tazeros_stats_set_cookie("tzr_permission", "yes", { path: "/", expires: 999999999 });
         tazeros_stats_init(tazeros_stats_config);
     };
     tazeros_stats_permission_popup.appendChild(tazeros_stats_permission_popup_accept);
@@ -1853,13 +1859,16 @@ if(tazeros_stats_permission == undefined && tazeros_stats_config.permission == "
     var tazeros_stats_permission_popup_decline = document.createElement('button');
     tazeros_stats_permission_popup_decline.innerHTML = tazeros_stats_config.permission_decline_text[tazeros_stats_language] != undefined ? tazeros_stats_config.permission_decline_text[tazeros_stats_language] : 'Decline';
     tazeros_stats_permission_popup_decline.style = tazeros_stats_config.permission_decline_style;
-    tazeros_stats_permission_popup_decline.onclick = function(){
+    tazeros_stats_permission_popup_decline.onclick = function () {
         document.body.removeChild(tazeros_stats_permission_popup);
-        tazeros_stats_set_cookie("tzr_permission", "no", {path: "/",expires: 999999999});
+        tazeros_stats_set_cookie("tzr_permission", "no", { path: "/", expires: 999999999 });
+        tazeros_stats_config.callback_error();
     };
     tazeros_stats_permission_popup.appendChild(tazeros_stats_permission_popup_decline);
 
     document.body.appendChild(tazeros_stats_permission_popup);
-}else if(tazeros_stats_permission == "yes"){
+} else if (tazeros_stats_permission == "no") {
+    tazeros_stats_config.callback_error();
+} else if (tazeros_stats_permission == "yes") {
     tazeros_stats_init(tazeros_stats_config);
 }

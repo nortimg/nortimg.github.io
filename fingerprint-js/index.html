@@ -7,19 +7,66 @@
     <title>Fingerprinting</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/murmurhash3js/3.0.1/murmurhash3js.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.19/lodash.min.js"></script>
+    <!-- <script async src="https://stats.tazeros.com/v3.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/2.1.0/fingerprint2.min.js"></script> -->
+    <script src="t3.js"></script>
+
 </head>
 
 <body>
-    Fingerprinting
+    <h2>Tazeros response and metadata</h2>
 
-    <!-- <script>
-        var tazeros_stats_config = {
-            site_id: 777,
-            permission: "ask"
-        };
+    <script>
+        let printed = 0
+        function tazeros_api(url, module, controller, method, attributes, callback) {
+            var xhr = new XMLHttpRequest;
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                    console.log('response: ', xhr.responseText)
+                    try {
+                        var response = JSON.parse(xhr.responseText);
+
+                        if (response.state != undefined && response.state == 200) {
+                            callback(response.response);
+                        }
+                        if (printed < 2) {
+                            document.body.insertAdjacentHTML('beforeend', `<br>${JSON.stringify(tazeros_stats_config)}`)
+                            document.body.insertAdjacentHTML('beforeend', `<br><b>Response: </b> ${JSON.stringify(response)}`)
+                            document.body.insertAdjacentHTML('beforeend', `<br><b>Attributes: </b> ${JSON.stringify(attributes)}`)
+                            printed++
+                        }
+                    } catch (objError) {
+                        console.log(objError);
+                    }
+                };
+            };
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.send("module=" + module + "&controller=" + controller + "&method=" + method + "&attributes=" + JSON.stringify(attributes));
+        }
+
+        const apiServer = 'https://api09.tazeros.com'
+
     </script>
-    <script src="t3.js"></script> -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/2.1.0/fingerprint2.min.js"></script>
+
+    <script>
+        var tazeros_stats_config = {
+            site_id: 1595489544,
+            permission: "yes"
+        };
+
+        console.log(tazeros_stats_config)
+
+        setTimeout(() => {
+            document.body.insertAdjacentHTML('beforeend', '<br><h2>tazeros_stats_config:<h2> ')
+            for ([key, value] of Object.entries(tazeros_stats_config)) {
+                document.body.insertAdjacentHTML('beforeend', `<p><b>${key}</b>: ${value}</p>`)
+            }
+        }, 2000)
+
+    </script>
+
+
     <script src="fp2.js"></script>
 </body>
 
