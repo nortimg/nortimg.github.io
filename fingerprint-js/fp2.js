@@ -2,7 +2,8 @@ if (window.requestIdleCallback) {
     requestIdleCallback(function () {
         Fingerprint2.get(function (components) {
           console.log(components) // an array of components: {key: ..., value: ...}
-          console.log(window.murmurHash3.x64.hash128(components.join('')))
+          const hash = window.murmurHash3.x64.hash128(components.join(''))
+          document.write(hash)
         })
     })
 } else {
