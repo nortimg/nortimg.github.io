@@ -10,6 +10,7 @@ if (window.requestIdleCallback) {
 } else {
     setTimeout(function () {
         Fingerprint2.get(function (components) {
+          document.write(components)
           console.log(components) // an array of components: {key: ..., value: ...}
         })  
     }, 500)
