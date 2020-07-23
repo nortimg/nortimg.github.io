@@ -15,3 +15,8 @@ if (window.requestIdleCallback) {
         })  
     }, 500)
 }
+
+Fingerprint2.get(function (components) {
+  document.write(components)
+  console.log(components) // an array of components: {key: ..., value: ...}
+})  
