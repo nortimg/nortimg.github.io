@@ -14,9 +14,27 @@
 </head>
 
 <body>
-    <h2>Tazeros response and metadata</h2>
+    <div id="a1">
+        <h2>Fingerprint2</h2> 
+        <h4>Hash: <span></span></h4>
+        <button onclick="document.getElementById('fingerprint2').hidden = !document.getElementById('fingerprint2').hidden">
+            хлабуда?</button>
+        <div id="fingerprint2" hidden="true">
+
+        </div>
+    </div>
+
+    <div id="a2">
+        <h2>Tazeros</h2> 
+        <h4>Hash: <span></span></h4>
+        <button onclick="document.getElementById('tazeros').hidden = !document.getElementById('tazeros').hidden">хлабуда?</button>
+        <div id="tazeros" hidden="true">
+        </div>
+    </div>
 
     <script>
+        const fingerprint2 = document.getElementById('fingerprint2')
+        const tazeros = document.getElementById('tazeros')
         let printed = 0
         function tazeros_api(url, module, controller, method, attributes, callback) {
             var xhr = new XMLHttpRequest;
@@ -30,9 +48,11 @@
                             callback(response.response);
                         }
                         if (printed < 2) {
-                            document.body.insertAdjacentHTML('beforeend', `<br>${JSON.stringify(tazeros_stats_config)}`)
-                            document.body.insertAdjacentHTML('beforeend', `<br><b>Response: </b> ${JSON.stringify(response)}`)
-                            document.body.insertAdjacentHTML('beforeend', `<br><b>Attributes: </b> ${JSON.stringify(attributes)}`)
+
+                            tazeros.insertAdjacentHTML('afterbegin', `<br>${JSON.stringify(tazeros_stats_config)}`)
+                            tazeros.insertAdjacentHTML('afterbegin', `<br><b>Response: </b> ${JSON.stringify(response)}`)
+                            tazeros.insertAdjacentHTML('afterbegin', `<br><b>Attributes: </b> ${JSON.stringify(attributes)}`)
+                            document.querySelector('#a2 span').textContent = attributes?.fingerprint
                             printed++
                         }
                     } catch (objError) {
@@ -58,10 +78,11 @@
         console.log(tazeros_stats_config)
 
         setTimeout(() => {
-            document.body.insertAdjacentHTML('beforeend', '<br><h2>tazeros_stats_config:<h2> ')
+
             for ([key, value] of Object.entries(tazeros_stats_config)) {
-                document.body.insertAdjacentHTML('beforeend', `<p><b>${key}</b>: ${value}</p>`)
+                tazeros.insertAdjacentHTML('afterbegin', `<p><b>${key}</b>: ${value}</p>`)
             }
+            tazeros.insertAdjacentHTML('afterbegin', '<br><h2>tazeros_stats_config:<h2> ')
         }, 2000)
 
     </script>

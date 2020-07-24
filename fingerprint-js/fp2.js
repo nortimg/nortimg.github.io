@@ -692,13 +692,17 @@
     requestIdleCallback(function () {
 
       Fingerprint2.get(function (components) {
-        document.body.insertAdjacentHTML('beforeend', `<h2>Fingerprint2: </h2> ${JSON.stringify(components)}`)
+        fingerprint2.insertAdjacentHTML('beforeend', `<h2>Fingerprint2: </h2> ${JSON.stringify(components).normalize()}`)
+        var values = components.map(function (component) { return component.value })
+        var murmur = Fingerprint2.x64hash128(values.join(''), 31)
+        document.querySelector('#a1 span').insertAdjacentHTML('beforeend', murmur)
+
       })
     })
   } else {
     setTimeout(function () {
       Fingerprint2.get(function (components) {
-        document.body.insertAdjacentHTML('beforeend', `<h2>Fingerprint2: </h2> ${JSON.stringify(components)}`)
+        fingerprint2.insertAdjacentHTML('beforeend', `<h2>Fingerprint2: </h2> ${JSON.stringify(components)}`)
       })
     }, 500)
   }
